@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/caseymrm/menuet"
+	"github.com/jantb/robotgo"
 	"math/rand"
 
 	"time"
@@ -25,6 +26,9 @@ func tracker() {
 			Title: fmtDuration(duration),
 		})
 		time.Sleep(time.Second)
+		if !active() {
+			clockOutNow()
+		}
 	}
 }
 
@@ -42,7 +46,6 @@ func hoursForToday() time.Duration {
 
 func clockInNow() {
 	if len(times) == 0 || !times[len(times)-1].ClockOut.IsZero() {
-
 		times = append(times, TimeStruct{
 			ClockIn: time.Now(),
 		})
@@ -62,6 +65,7 @@ func fmtDuration(d time.Duration) string {
 	m := d / time.Minute
 	return fmt.Sprintf("%02d:%02d", h, m)
 }
+
 func active() bool {
 	pos := rand.Int()
 	if pos != lastPos {
@@ -72,8 +76,8 @@ func active() bool {
 	if time.Now().Add(-15 * time.Minute).Before(lastTime) {
 		return true
 	}
-	//x, y := robotgo.GetMousePos()
-	//	fmt.Println("pos:", x, y)
+	x, y := robotgo.GetMousePos()
+	fmt.Println("pos:", x, y)
 	return false
 }
 
