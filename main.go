@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/caseymrm/menuet"
 	"github.com/jantb/robotgo"
+	"log"
+	"os/exec"
+	"runtime"
 	"time"
 )
 
@@ -26,6 +29,8 @@ func tracker() {
 		time.Sleep(time.Second)
 		if !active() {
 			clockOutNow()
+		} else {
+			clockInNow()
 		}
 	}
 }
@@ -56,6 +61,13 @@ func clockOutNow() {
 	}
 }
 
+func openAlvTime() {
+	openbrowser("https://alvtime-vue-pwa-prod.azurewebsites.net/")
+}
+
+func openExperis() {
+	openbrowser("https://mytime.experis.no//")
+}
 func fmtDuration(d time.Duration) string {
 	d = d.Round(time.Minute)
 	h := d / time.Hour
@@ -90,8 +102,39 @@ func menuItems() []menuet.MenuItem {
 			Clicked: clockOutNow,
 			State:   len(times) == 0 || !times[len(times)-1].ClockOut.IsZero(),
 		},
+		{
+			Type: menuet.Separator,
+		},
+		{
+			Text:    "AlvTime",
+			Clicked: openAlvTime,
+		},
+
+		{
+			Text:    "Experis",
+			Clicked: openExperis,
+		},
 	}
 	return items
+}
+
+func openbrowser(url string) {
+	var err error
+
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func main() {
