@@ -11,19 +11,48 @@ import (
 var lastPos = 0
 var lastTime = time.Now()
 
-var clockIn = time.Now()
+type TimeStruct struct {
+	ClockIn  time.Time
+	ClockOut time.Time
+}
+
+var times []TimeStruct
 
 func tracker() {
 	for {
-		duration := time.Now().Sub(clockIn)
+		duration := hoursForToday()
 		menuet.App().SetMenuState(&menuet.MenuState{
 			Title: fmtDuration(duration),
 		})
 		time.Sleep(time.Second)
 	}
 }
+
+func hoursForToday() time.Duration {
+	duration := int64(0)
+	for _, timeStruct := range times {
+		if timeStruct.ClockOut.IsZero() {
+			duration += time.Now().Sub(timeStruct.ClockIn).Nanoseconds()
+			continue
+		}
+		duration += timeStruct.ClockOut.Sub(timeStruct.ClockIn).Nanoseconds()
+	}
+	return time.Duration(duration)
+}
+
 func clockInNow() {
-	clockIn = time.Now()
+	if len(times) == 0 || !times[len(times)-1].ClockOut.IsZero() {
+
+		times = append(times, TimeStruct{
+			ClockIn: time.Now(),
+		})
+	}
+}
+
+func clockOutNow() {
+	if len(times) != 0 && times[len(times)-1].ClockOut.IsZero() {
+		times[len(times)-1].ClockOut = time.Now()
+	}
 }
 
 func fmtDuration(d time.Duration) string {
@@ -55,7 +84,8 @@ func menuItems() []menuet.MenuItem {
 			Clicked: clockInNow,
 		},
 		{
-			Text: "Clock out",
+			Text:    "Clock out",
+			Clicked: clockOutNow,
 		},
 	}
 	return items
