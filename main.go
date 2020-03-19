@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/caseymrm/menuet"
 	"github.com/jantb/robotgo"
-	"math/rand"
-
 	"time"
 )
 
@@ -67,7 +65,8 @@ func fmtDuration(d time.Duration) string {
 }
 
 func active() bool {
-	pos := rand.Int()
+	x, y := robotgo.GetMousePos()
+	pos := x + y
 	if pos != lastPos {
 		lastPos = pos
 		lastTime = time.Now()
@@ -76,20 +75,20 @@ func active() bool {
 	if time.Now().Add(-15 * time.Minute).Before(lastTime) {
 		return true
 	}
-	x, y := robotgo.GetMousePos()
-	fmt.Println("pos:", x, y)
 	return false
 }
 
 func menuItems() []menuet.MenuItem {
 	items := []menuet.MenuItem{
 		{
-			Text:    "Clock in",
+			Text:    "Clocked in",
 			Clicked: clockInNow,
+			State:   len(times) != 0 && times[len(times)-1].ClockOut.IsZero(),
 		},
 		{
-			Text:    "Clock out",
+			Text:    "Clocked out",
 			Clicked: clockOutNow,
+			State:   len(times) == 0 || !times[len(times)-1].ClockOut.IsZero(),
 		},
 	}
 	return items
