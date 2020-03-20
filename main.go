@@ -12,6 +12,7 @@ import (
 
 var lastPos = 0
 var lastTime = time.Now()
+var auto = true
 
 type TimeStruct struct {
 	ClockIn  time.Time
@@ -26,11 +27,13 @@ func tracker() {
 		menuet.App().SetMenuState(&menuet.MenuState{
 			Title: fmtDuration(duration),
 		})
-		time.Sleep(time.Second)
-		if !active() {
-			clockOutNow()
-		} else {
-			clockInNow()
+		time.Sleep(200 * time.Millisecond)
+		if auto {
+			if !active() {
+				clockOutNow()
+			} else {
+				clockInNow()
+			}
 		}
 	}
 }
@@ -55,10 +58,52 @@ func clockInNow() {
 	}
 }
 
+func clockInNowClicked() {
+	auto = false
+	clockInNow()
+}
+
+func clockOutNowClicked() {
+	auto = false
+	clockOutNow()
+}
 func clockOutNow() {
 	if len(times) != 0 && times[len(times)-1].ClockOut.IsZero() {
 		times[len(times)-1].ClockOut = time.Now()
 	}
+}
+
+func toggleAuto() {
+	auto = !auto
+}
+
+func reset() {
+	times = times[:0]
+}
+
+func add15() {
+	times = append(times, TimeStruct{
+		ClockIn:  time.Now(),
+		ClockOut: time.Now().Add(15 * time.Minute),
+	})
+}
+func add30() {
+	times = append(times, TimeStruct{
+		ClockIn:  time.Now(),
+		ClockOut: time.Now().Add(30 * time.Minute),
+	})
+}
+func sub15() {
+	times = append(times, TimeStruct{
+		ClockIn:  time.Now(),
+		ClockOut: time.Now().Add(-15 * time.Minute),
+	})
+}
+func sub30() {
+	times = append(times, TimeStruct{
+		ClockIn:  time.Now(),
+		ClockOut: time.Now().Add(-30 * time.Minute),
+	})
 }
 
 func openAlvTime() {
@@ -93,14 +138,42 @@ func active() bool {
 func menuItems() []menuet.MenuItem {
 	items := []menuet.MenuItem{
 		{
-			Text:    "Clocked in",
-			Clicked: clockInNow,
+			Text:    "Clock in",
+			Clicked: clockInNowClicked,
 			State:   len(times) != 0 && times[len(times)-1].ClockOut.IsZero(),
 		},
 		{
-			Text:    "Clocked out",
-			Clicked: clockOutNow,
+			Text:    "Clock out",
+			Clicked: clockOutNowClicked,
 			State:   len(times) == 0 || !times[len(times)-1].ClockOut.IsZero(),
+		},
+		{
+			Text:    "Auto",
+			Clicked: toggleAuto,
+			State:   auto,
+		},
+		{
+			Type: menuet.Separator,
+		},
+		{
+			Text:    "Reset",
+			Clicked: reset,
+		},
+		{
+			Text:    "Add 15",
+			Clicked: add15,
+		},
+		{
+			Text:    "Remove 15",
+			Clicked: sub15,
+		},
+		{
+			Text:    "Add 30",
+			Clicked: add30,
+		},
+		{
+			Text:    "Remove 30",
+			Clicked: sub30,
 		},
 		{
 			Type: menuet.Separator,
