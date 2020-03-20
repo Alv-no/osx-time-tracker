@@ -214,5 +214,6 @@ func main() {
 	go tracker()
 	app := menuet.App()
 	app.Children = menuItems
+	app.Label = "AlvMenuTime"
 	app.RunApplication()
 }
