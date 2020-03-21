@@ -156,24 +156,31 @@ func menuItems() []menuet.MenuItem {
 			Type: menuet.Separator,
 		},
 		{
-			Text:    "Reset",
-			Clicked: reset,
-		},
-		{
-			Text:    "Add 15",
-			Clicked: add15,
-		},
-		{
-			Text:    "Remove 15",
-			Clicked: sub15,
-		},
-		{
-			Text:    "Add 30",
-			Clicked: add30,
-		},
-		{
-			Text:    "Remove 30",
-			Clicked: sub30,
+			Text: "Adjust time",
+			Children: func() []menuet.MenuItem {
+				return []menuet.MenuItem{
+					{
+						Text:    "Reset",
+						Clicked: reset,
+					},
+					{
+						Text:    "Add 15",
+						Clicked: add15,
+					},
+					{
+						Text:    "Remove 15",
+						Clicked: sub15,
+					},
+					{
+						Text:    "Add 30",
+						Clicked: add30,
+					},
+					{
+						Text:    "Remove 30",
+						Clicked: sub30,
+					},
+				}
+			},
 		},
 		{
 			Type: menuet.Separator,
