@@ -189,7 +189,6 @@ func menuItems() []menuet.MenuItem {
 			Text:    "AlvTime",
 			Clicked: openAlvTime,
 		},
-
 		{
 			Text:    "Experis",
 			Clicked: openExperis,
@@ -222,5 +221,7 @@ func main() {
 	app := menuet.App()
 	app.Children = menuItems
 	app.Label = "AlvMenuTime"
+	app.AutoUpdate.Version = "v0.1"
+	app.AutoUpdate.Repo = "jantb/time"
 	app.RunApplication()
 }
