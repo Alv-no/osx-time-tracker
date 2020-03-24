@@ -421,7 +421,7 @@ func main() {
 	app := menuet.App()
 	app.Children = menuItems
 	app.Label = "AlvMenuTime"
-	app.AutoUpdate.Version = "v0.2"
+	app.AutoUpdate.Version = "v0.3"
 	app.AutoUpdate.Repo = "jantb/time"
 	app.RunApplication()
 }
