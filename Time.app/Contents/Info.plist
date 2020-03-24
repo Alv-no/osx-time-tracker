@@ -21,7 +21,7 @@
   <key>IFMajorVersion</key>
   <integer>0</integer>
   <key>IFMinorVersion</key>
-  <integer>1</integer>
+  <integer>2</integer>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSSupportsAutomaticGraphicsSwitching</key><true/>
 </dict>
