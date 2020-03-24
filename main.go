@@ -253,14 +253,14 @@ func parseDecimalStringHoursToMinutes(field string) int {
 func openExperis() {
 	openbrowser("https://mytime.experis.no//")
 }
-func fmtDuration(d time.Duration) string {
-	d = d.Round(time.Minute)
+func fmtDuration(dur time.Duration) string {
+	d := dur.Round(time.Minute)
 	h := d / time.Hour
 	d -= h * time.Hour
 	m := d / time.Minute
 	duration := sevenAndHalfHour * time.Nanosecond
 
-	doneBy := time.Now().Add(duration).Add(-d)
+	doneBy := time.Now().Add(duration).Add(-dur)
 
 	if canClockOut() {
 		return fmt.Sprintf("􀐱 %02d:%02d %s", h, m, doneBy.Format("15:04"))
