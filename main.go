@@ -57,7 +57,9 @@ func tracker() {
 		if auto {
 			if !active() {
 				if subTimeTresh && canClockOut() {
+					clockOutNow()
 					subAutoTresh()
+					continue
 				}
 				clockOutNow()
 			} else {
