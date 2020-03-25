@@ -7,8 +7,6 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -136,31 +134,12 @@ func reset() {
 	times = times[:0]
 }
 
-func add15() {
+func addDuration(dur time.Duration) {
 	times = append(times, TimeStruct{
 		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(15 * time.Minute),
+		ClockOut: time.Now().Add(dur),
 	})
 }
-func add30() {
-	times = append(times, TimeStruct{
-		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(30 * time.Minute),
-	})
-}
-func sub15() {
-	times = append(times, TimeStruct{
-		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(-15 * time.Minute),
-	})
-}
-func sub30() {
-	times = append(times, TimeStruct{
-		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(-30 * time.Minute),
-	})
-}
-
 func subAutoTresh() {
 	times = append(times, TimeStruct{
 		ClockIn:  time.Now(),
@@ -171,92 +150,6 @@ func subAutoTresh() {
 func openAlvTime() {
 	openbrowser("https://alvtime-vue-pwa-prod.azurewebsites.net/")
 }
-
-func copyAlvTime() {
-	robotgo.KeyTap("a", "command")
-	robotgo.KeyTap("c", "command")
-	time.Sleep(100 * time.Millisecond)
-	field, err := robotgo.ReadAll()
-	if err != nil {
-		return
-	}
-	week = Week{
-		Monday:    parseDecimalStringHoursToMinutes(field),
-		Tuesday:   readNextField(),
-		Wednesday: readNextField(),
-		Thursday:  readNextField(),
-		Friday:    readNextField(),
-		Saturday:  readNextField(),
-		Sunday:    readNextField(),
-	}
-}
-
-func pasteExperis() {
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Monday/60, week.Monday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Tuesday/60, week.Tuesday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Wednesday/60, week.Wednesday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Thursday/60, week.Thursday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Friday/60, week.Friday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Saturday/60, week.Saturday%60))
-	time.Sleep(1000 * time.Second)
-	robotgo.KeyTap("tab")
-	time.Sleep(1000 * time.Second)
-	robotgo.PasteStr(fmt.Sprintf("%d:%d", week.Sunday/60, week.Sunday%60))
-}
-
-func readNextField() int {
-	robotgo.KeyTap("tab")
-	robotgo.KeyTap("c", "command")
-	time.Sleep(100 * time.Millisecond)
-	field, err := robotgo.ReadAll()
-	if err != nil {
-		return 0
-	}
-
-	return parseDecimalStringHoursToMinutes(field)
-}
-
-func parseDecimalStringHoursToMinutes(field string) int {
-	contains := strings.Contains(field, ",")
-	if contains {
-		split := strings.Split(field, ",")
-		if len(split) == 2 {
-			hours, err := strconv.Atoi(split[0])
-			if err != nil {
-				return 0
-			}
-			minutes, err := strconv.Atoi(split[1])
-			if err != nil {
-				return 0
-			}
-
-			return minutes + (hours * 60)
-		} else {
-			return 0
-		}
-	}
-	hours, err := strconv.Atoi(field)
-	if err != nil {
-		return 0
-	}
-	return hours * 60
-}
-
 func openExperis() {
 	openbrowser("https://mytime.experis.no//")
 }
@@ -289,21 +182,6 @@ func active() bool {
 	return false
 }
 
-func autoTres5() {
-	autoTimeTresh = -5 * time.Minute
-}
-func autoTres10() {
-	autoTimeTresh = -10 * time.Minute
-}
-func autoTres15() {
-	autoTimeTresh = -15 * time.Minute
-}
-func autoTres30() {
-	autoTimeTresh = -30 * time.Minute
-}
-func autoTres60() {
-	autoTimeTresh = -60 * time.Minute
-}
 func menuItems() []menuet.MenuItem {
 	items := []menuet.MenuItem{
 		{
@@ -329,29 +207,39 @@ func menuItems() []menuet.MenuItem {
 			Children: func() []menuet.MenuItem {
 				return []menuet.MenuItem{
 					{
-						Text:    "5m",
-						Clicked: autoTres5,
-						State:   autoTimeTresh == -5*time.Minute,
+						Text: "5m",
+						Clicked: func() {
+							autoTimeTresh = -5 * time.Minute
+						},
+						State: autoTimeTresh == -5*time.Minute,
 					},
 					{
-						Text:    "10m",
-						Clicked: autoTres10,
-						State:   autoTimeTresh == -10*time.Minute,
+						Text: "10m",
+						Clicked: func() {
+							autoTimeTresh = -10 * time.Minute
+						},
+						State: autoTimeTresh == -10*time.Minute,
 					},
 					{
-						Text:    "15m",
-						Clicked: autoTres15,
-						State:   autoTimeTresh == -15*time.Minute,
+						Text: "15m",
+						Clicked: func() {
+							autoTimeTresh = -15 * time.Minute
+						},
+						State: autoTimeTresh == -15*time.Minute,
 					},
 					{
-						Text:    "30m",
-						Clicked: autoTres30,
-						State:   autoTimeTresh == -30*time.Minute,
+						Text: "30m",
+						Clicked: func() {
+							autoTimeTresh = -30 * time.Minute
+						},
+						State: autoTimeTresh == -30*time.Minute,
 					},
 					{
-						Text:    "1h",
-						Clicked: autoTres60,
-						State:   autoTimeTresh == -60*time.Minute,
+						Text: "1h",
+						Clicked: func() {
+							autoTimeTresh = -60 * time.Minute
+						},
+						State: autoTimeTresh == -60*time.Minute,
 					},
 					{
 						Text:    "Substract time after inactive",
@@ -370,20 +258,28 @@ func menuItems() []menuet.MenuItem {
 						Clicked: reset,
 					},
 					{
-						Text:    "Add 15",
-						Clicked: add15,
+						Text: "Add 15",
+						Clicked: func() {
+							addDuration(15 * time.Minute)
+						},
 					},
 					{
-						Text:    "Add 30",
-						Clicked: add30,
+						Text: "Add 30",
+						Clicked: func() {
+							addDuration(30 * time.Minute)
+						},
 					},
 					{
-						Text:    "Remove 15",
-						Clicked: sub15,
+						Text: "Remove 15",
+						Clicked: func() {
+							addDuration(-15 * time.Minute)
+						},
 					},
 					{
-						Text:    "Remove 30",
-						Clicked: sub30,
+						Text: "Remove 30",
+						Clicked: func() {
+							addDuration(-30 * time.Minute)
+						},
 					},
 				}
 			},
