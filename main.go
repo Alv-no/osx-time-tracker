@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const sevenAndHalfHour = 27000000000000
+const sevenAndHalfHour = 450 * time.Minute
 
 var lastPos = 0
 var lastTime = time.Now()
@@ -44,10 +44,17 @@ func tracker() {
 	for {
 		duration := hoursForToday()
 		checkEndOfDayAndDisplayMessage(duration)
+		if canClockOut() {
+			menuet.App().SetMenuState(&menuet.MenuState{
+				Title: fmtDuration(duration),
+				Image: "clock.pdf",
+			})
+		} else {
+			menuet.App().SetMenuState(&menuet.MenuState{
+				Title: fmtDuration(duration),
+			})
+		}
 
-		menuet.App().SetMenuState(&menuet.MenuState{
-			Title: fmtDuration(duration),
-		})
 		time.Sleep(200 * time.Millisecond)
 		if auto {
 			if !active() {
@@ -64,7 +71,7 @@ func tracker() {
 
 func checkEndOfDayAndDisplayMessage(duration time.Duration) {
 
-	if duration.Nanoseconds() > sevenAndHalfHour && !endOfDayNotice {
+	if duration > sevenAndHalfHour && !endOfDayNotice {
 		endOfDayNotice = true
 		alert := menuet.App().Alert(menuet.Alert{
 			MessageText:     "Worked 7.5 hours today",
@@ -258,12 +265,11 @@ func fmtDuration(dur time.Duration) string {
 	h := d / time.Hour
 	d -= h * time.Hour
 	m := d / time.Minute
-	duration := sevenAndHalfHour * time.Nanosecond
 
-	doneBy := time.Now().Add(duration).Add(-dur)
+	doneBy := time.Now().Add(sevenAndHalfHour).Add(-dur)
 
 	if canClockOut() {
-		return fmt.Sprintf("􀐱 %02d:%02d %s", h, m, doneBy.Format("15:04"))
+		return fmt.Sprintf("%02d:%02d %s", h, m, doneBy.Format("15:04"))
 	}
 
 	return fmt.Sprintf("%02d:%02d", h, m)
@@ -277,7 +283,7 @@ func active() bool {
 		lastTime = time.Now()
 		return true
 	}
-	if time.Now().Add(autoTimeTresh * time.Minute).Before(lastTime) {
+	if time.Now().Add(autoTimeTresh).Before(lastTime) {
 		return true
 	}
 	return false
