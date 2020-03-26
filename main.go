@@ -152,9 +152,24 @@ func subAutoTresh() {
 }
 
 func openAlvTime() {
+	duration := hoursForToday()
+	d := duration.Round(15 * time.Minute)
+	err := robotgo.WriteAll(fmt.Sprintf("%.2f", d.Hours()))
+	if err != nil {
+		log.Fatal(err)
+	}
 	openbrowser("https://alvtime-vue-pwa-prod.azurewebsites.net/")
 }
 func openExperis() {
+	duration := hoursForToday()
+	d := duration.Round(15 * time.Minute)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	err := robotgo.WriteAll(fmt.Sprintf("%d:%d", h, m))
+	if err != nil {
+		log.Fatal(err)
+	}
 	openbrowser("https://mytime.experis.no//")
 }
 func fmtDuration(dur time.Duration) string {
