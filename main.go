@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/caseymrm/menuet"
 	"github.com/jantb/robotgo"
+	"io/ioutil"
 	"log"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -15,16 +19,12 @@ const sevenAndHalfHour = 450 * time.Minute
 var lastPos = 0
 var lastTime = time.Now()
 var auto = true
-var week = Week{}
 
-type Week struct {
-	Monday    int
-	Tuesday   int
-	Wednesday int
-	Thursday  int
-	Friday    int
-	Saturday  int
-	Sunday    int
+var days []Day
+
+type Day struct {
+	date  string
+	times []TimeStruct
 }
 
 var autoTimeTresh = -15 * time.Minute
@@ -102,6 +102,7 @@ func clockInNow() {
 		times = append(times, TimeStruct{
 			ClockIn: time.Now(),
 		})
+		store(days)
 	}
 }
 
@@ -117,6 +118,7 @@ func clockOutNowClicked() {
 func clockOutNow() {
 	if canClockOut() {
 		times[len(times)-1].ClockOut = time.Now()
+		store(days)
 	}
 }
 
@@ -337,7 +339,37 @@ func openbrowser(url string) {
 
 }
 
+func store(days []Day) {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	bytes, err := json.MarshalIndent(days, "", "    ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ioutil.WriteFile(filepath.Join(usr.HomeDir, ".days.json"), bytes, 0600)
+}
+
+func load() {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	bytes, err := ioutil.ReadFile(filepath.Join(usr.HomeDir, ".jira.conf"))
+	if err != nil {
+		bytes, err := json.MarshalIndent(days, "", "    ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		ioutil.WriteFile(filepath.Join(usr.HomeDir, ".jira.conf"), bytes, 0600)
+	}
+
+	json.Unmarshal(bytes, &days)
+}
+
 func main() {
+	load()
 	go tracker()
 	app := menuet.App()
 	app.Children = menuItems
