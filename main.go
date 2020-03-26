@@ -137,15 +137,17 @@ func reset() {
 }
 
 func addDuration(dur time.Duration) {
+	clockOutNow()
 	times = append(times, TimeStruct{
 		ClockIn:  time.Now(),
 		ClockOut: time.Now().Add(dur),
 	})
 }
 func subAutoTresh() {
+	clockOutNow()
 	times = append(times, TimeStruct{
 		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(autoTimeTresh * time.Minute),
+		ClockOut: time.Now().Add(autoTimeTresh),
 	})
 }
 
@@ -244,7 +246,7 @@ func menuItems() []menuet.MenuItem {
 						State: autoTimeTresh == -60*time.Minute,
 					},
 					{
-						Text:    "Substract time after inactive",
+						Text:    "Subtract time after idle",
 						Clicked: toggleSubAutotresh,
 						State:   subTimeTresh,
 					},
