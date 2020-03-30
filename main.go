@@ -136,6 +136,7 @@ func toggleSubAutotresh() {
 
 func reset() {
 	times = times[:0]
+	endOfDayNotice = false
 }
 
 func addDuration(dur time.Duration) {
