@@ -102,7 +102,7 @@ func clockInNow() {
 		times = append(times, TimeStruct{
 			ClockIn: time.Now(),
 		})
-		store(days)
+		store()
 	}
 }
 
@@ -118,7 +118,7 @@ func clockOutNowClicked() {
 func clockOutNow() {
 	if canClockOut() {
 		times[len(times)-1].ClockOut = time.Now()
-		store(days)
+		store()
 	}
 }
 
@@ -340,7 +340,7 @@ func openbrowser(url string) {
 
 }
 
-func store(days []Day) {
+func store() {
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatal(err)
@@ -357,13 +357,13 @@ func load() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	bytes, err := ioutil.ReadFile(filepath.Join(usr.HomeDir, ".jira.conf"))
+	bytes, err := ioutil.ReadFile(filepath.Join(usr.HomeDir, ".days.json"))
 	if err != nil {
 		bytes, err := json.MarshalIndent(days, "", "    ")
 		if err != nil {
 			log.Fatal(err)
 		}
-		ioutil.WriteFile(filepath.Join(usr.HomeDir, ".jira.conf"), bytes, 0600)
+		ioutil.WriteFile(filepath.Join(usr.HomeDir, ".days.json"), bytes, 0600)
 	}
 
 	json.Unmarshal(bytes, &days)
