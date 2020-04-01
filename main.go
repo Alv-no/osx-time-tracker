@@ -23,8 +23,9 @@ var auto = true
 var days []Day
 
 type Day struct {
-	date  string
-	times []TimeStruct
+	Date  string
+	Total string
+	Times []TimeStruct
 }
 
 var autoTimeTresh = -15 * time.Minute
@@ -36,11 +37,11 @@ type TimeStruct struct {
 	ClockOut time.Time
 }
 
-var times []TimeStruct
-
 func tracker() {
+	reset()
 	for {
 		duration := hoursForToday()
+		days[len(days)-1].Total = duration.String()
 		checkEndOfDayAndDisplayMessage(duration)
 		if canClockOut() {
 			menuet.App().SetMenuState(&menuet.MenuState{
@@ -54,6 +55,7 @@ func tracker() {
 		}
 
 		time.Sleep(200 * time.Millisecond)
+		store()
 		if auto {
 			if !active() {
 				if subTimeTresh && canClockOut() {
@@ -84,10 +86,12 @@ func checkEndOfDayAndDisplayMessage(duration time.Duration) {
 		}
 	}
 }
-
+func getTimes() []TimeStruct {
+	return days[len(days)-1].Times
+}
 func hoursForToday() time.Duration {
 	duration := int64(0)
-	for _, timeStruct := range times {
+	for _, timeStruct := range getTimes() {
 		if timeStruct.ClockOut.IsZero() {
 			duration += time.Now().Sub(timeStruct.ClockIn).Nanoseconds()
 			continue
@@ -98,8 +102,8 @@ func hoursForToday() time.Duration {
 }
 
 func clockInNow() {
-	if len(times) == 0 || !times[len(times)-1].ClockOut.IsZero() {
-		times = append(times, TimeStruct{
+	if len(getTimes()) == 0 || !getTimes()[len(getTimes())-1].ClockOut.IsZero() {
+		days[len(days)-1].Times = append(getTimes(), TimeStruct{
 			ClockIn: time.Now(),
 		})
 		store()
@@ -117,13 +121,13 @@ func clockOutNowClicked() {
 }
 func clockOutNow() {
 	if canClockOut() {
-		times[len(times)-1].ClockOut = time.Now()
+		getTimes()[len(getTimes())-1].ClockOut = time.Now()
 		store()
 	}
 }
 
 func canClockOut() bool {
-	return len(times) != 0 && times[len(times)-1].ClockOut.IsZero()
+	return len(getTimes()) != 0 && getTimes()[len(getTimes())-1].ClockOut.IsZero()
 }
 
 func toggleAuto() {
@@ -135,20 +139,24 @@ func toggleSubAutotresh() {
 }
 
 func reset() {
-	times = times[:0]
+	days = append(days, Day{
+		Date:  time.Now().Format("02.01.2006"),
+		Total: "",
+		Times: []TimeStruct{},
+	})
 	endOfDayNotice = false
 }
 
 func addDuration(dur time.Duration) {
 	clockOutNow()
-	times = append(times, TimeStruct{
+	days[len(days)-1].Times = append(getTimes(), TimeStruct{
 		ClockIn:  time.Now(),
 		ClockOut: time.Now().Add(dur),
 	})
 }
 func subAutoTresh() {
 	clockOutNow()
-	times = append(times, TimeStruct{
+	days[len(days)-1].Times = append(getTimes(), TimeStruct{
 		ClockIn:  time.Now(),
 		ClockOut: time.Now().Add(autoTimeTresh),
 	})
@@ -209,12 +217,12 @@ func menuItems() []menuet.MenuItem {
 		{
 			Text:    "Clock in",
 			Clicked: clockInNowClicked,
-			State:   len(times) != 0 && times[len(times)-1].ClockOut.IsZero(),
+			State:   len(getTimes()) != 0 && getTimes()[len(getTimes())-1].ClockOut.IsZero(),
 		},
 		{
 			Text:    "Clock out",
 			Clicked: clockOutNowClicked,
-			State:   len(times) == 0 || !times[len(times)-1].ClockOut.IsZero(),
+			State:   len(getTimes()) == 0 || !getTimes()[len(getTimes())-1].ClockOut.IsZero(),
 		},
 		{
 			Text:    "Auto",
