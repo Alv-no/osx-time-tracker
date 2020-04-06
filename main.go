@@ -1,15 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/caseymrm/menuet"
 	"github.com/jantb/robotgo"
-	"io/ioutil"
 	"log"
 	"os/exec"
-	"os/user"
-	"path/filepath"
 	"runtime"
 	"time"
 )
@@ -20,59 +16,47 @@ var lastPos = 0
 var lastTime = time.Now()
 var auto = true
 
-var days []Day
-
-type Day struct {
-	Date  string
-	Total string
-	Times []TimeStruct
-}
+var tracking Tracking
 
 var autoTimeTresh = -15 * time.Minute
 var subTimeTresh = true
 var endOfDayNotice = false
 
-type TimeStruct struct {
-	ClockIn  time.Time
-	ClockOut time.Time
-}
-
 func tracker() {
-	reset()
+	tracking.reset()
 	for {
-		duration := hoursForToday()
-		days[len(days)-1].Total = duration.String()
-		checkEndOfDayAndDisplayMessage(duration)
-		if canClockOut() {
+		hoursForToday := tracking.hoursForToday()
+		tracking.updateTotalForToday(hoursForToday)
+		checkEndOfDayAndDisplayMessage(hoursForToday)
+		if tracking.canClockOut() {
 			menuet.App().SetMenuState(&menuet.MenuState{
-				Title: fmtDuration(duration),
+				Title: fmtDuration(hoursForToday),
 				Image: "clock.pdf",
 			})
 		} else {
 			menuet.App().SetMenuState(&menuet.MenuState{
-				Title: fmtDuration(duration),
+				Title: fmtDuration(hoursForToday),
 			})
 		}
 
 		time.Sleep(200 * time.Millisecond)
-		store()
+		tracking.store()
 		if auto {
 			if !active() {
-				if subTimeTresh && canClockOut() {
-					clockOutNow()
-					subAutoTresh()
+				if subTimeTresh && tracking.canClockOut() {
+					tracking.clockOutNow()
+					tracking.subAutoTresh(autoTimeTresh)
 					continue
 				}
-				clockOutNow()
+				tracking.clockOutNow()
 			} else {
-				clockInNow()
+				tracking.clockInNow()
 			}
 		}
 	}
 }
 
 func checkEndOfDayAndDisplayMessage(duration time.Duration) {
-
 	if duration > sevenAndHalfHour && !endOfDayNotice {
 		endOfDayNotice = true
 		alert := menuet.App().Alert(menuet.Alert{
@@ -86,48 +70,15 @@ func checkEndOfDayAndDisplayMessage(duration time.Duration) {
 		}
 	}
 }
-func getTimes() []TimeStruct {
-	return days[len(days)-1].Times
-}
-func hoursForToday() time.Duration {
-	duration := int64(0)
-	for _, timeStruct := range getTimes() {
-		if timeStruct.ClockOut.IsZero() {
-			duration += time.Now().Sub(timeStruct.ClockIn).Nanoseconds()
-			continue
-		}
-		duration += timeStruct.ClockOut.Sub(timeStruct.ClockIn).Nanoseconds()
-	}
-	return time.Duration(duration)
-}
-
-func clockInNow() {
-	if len(getTimes()) == 0 || !getTimes()[len(getTimes())-1].ClockOut.IsZero() {
-		days[len(days)-1].Times = append(getTimes(), TimeStruct{
-			ClockIn: time.Now(),
-		})
-		store()
-	}
-}
 
 func clockInNowClicked() {
 	auto = false
-	clockInNow()
+	tracking.clockInNow()
 }
 
 func clockOutNowClicked() {
 	auto = false
-	clockOutNow()
-}
-func clockOutNow() {
-	if canClockOut() {
-		getTimes()[len(getTimes())-1].ClockOut = time.Now()
-		store()
-	}
-}
-
-func canClockOut() bool {
-	return len(getTimes()) != 0 && getTimes()[len(getTimes())-1].ClockOut.IsZero()
+	tracking.clockOutNow()
 }
 
 func toggleAuto() {
@@ -138,32 +89,8 @@ func toggleSubAutotresh() {
 	subTimeTresh = !subTimeTresh
 }
 
-func reset() {
-	days = append(days, Day{
-		Date:  time.Now().Format("02.01.2006"),
-		Total: "",
-		Times: []TimeStruct{},
-	})
-	endOfDayNotice = false
-}
-
-func addDuration(dur time.Duration) {
-	clockOutNow()
-	days[len(days)-1].Times = append(getTimes(), TimeStruct{
-		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(dur),
-	})
-}
-func subAutoTresh() {
-	clockOutNow()
-	days[len(days)-1].Times = append(getTimes(), TimeStruct{
-		ClockIn:  time.Now(),
-		ClockOut: time.Now().Add(autoTimeTresh),
-	})
-}
-
 func openAlvTime() {
-	duration := hoursForToday()
+	duration := tracking.hoursForToday()
 	d := duration.Round(15 * time.Minute)
 	err := robotgo.WriteAll(fmt.Sprintf("%.2f", d.Hours()))
 	if err != nil {
@@ -172,7 +99,7 @@ func openAlvTime() {
 	openbrowser("https://alvtime-vue-pwa-prod.azurewebsites.net/")
 }
 func openExperis() {
-	duration := hoursForToday()
+	duration := tracking.hoursForToday()
 	d := duration.Round(15 * time.Minute)
 	h := d / time.Hour
 	d -= h * time.Hour
@@ -191,7 +118,7 @@ func fmtDuration(dur time.Duration) string {
 
 	doneBy := time.Now().Add(sevenAndHalfHour).Add(-dur)
 
-	if canClockOut() {
+	if tracking.canClockOut() {
 		return fmt.Sprintf("%02d:%02d %s", h, m, doneBy.Format("15:04"))
 	}
 
@@ -217,12 +144,12 @@ func menuItems() []menuet.MenuItem {
 		{
 			Text:    "Clock in",
 			Clicked: clockInNowClicked,
-			State:   len(getTimes()) != 0 && getTimes()[len(getTimes())-1].ClockOut.IsZero(),
+			State:   len(tracking.getTimes()) != 0 && tracking.getTimes()[len(tracking.getTimes())-1].ClockOut.IsZero(),
 		},
 		{
 			Text:    "Clock out",
 			Clicked: clockOutNowClicked,
-			State:   len(getTimes()) == 0 || !getTimes()[len(getTimes())-1].ClockOut.IsZero(),
+			State:   len(tracking.getTimes()) == 0 || !tracking.getTimes()[len(tracking.getTimes())-1].ClockOut.IsZero(),
 		},
 		{
 			Text:    "Auto",
@@ -284,31 +211,34 @@ func menuItems() []menuet.MenuItem {
 			Children: func() []menuet.MenuItem {
 				return []menuet.MenuItem{
 					{
-						Text:    "Reset",
-						Clicked: reset,
+						Text: "Reset",
+						Clicked: func() {
+							tracking.reset()
+							endOfDayNotice = false
+						},
 					},
 					{
 						Text: "Add 15",
 						Clicked: func() {
-							addDuration(15 * time.Minute)
+							tracking.addDuration(15 * time.Minute)
 						},
 					},
 					{
 						Text: "Add 30",
 						Clicked: func() {
-							addDuration(30 * time.Minute)
+							tracking.addDuration(30 * time.Minute)
 						},
 					},
 					{
 						Text: "Remove 15",
 						Clicked: func() {
-							addDuration(-15 * time.Minute)
+							tracking.addDuration(-15 * time.Minute)
 						},
 					},
 					{
 						Text: "Remove 30",
 						Clicked: func() {
-							addDuration(-30 * time.Minute)
+							tracking.addDuration(-30 * time.Minute)
 						},
 					},
 				}
@@ -348,37 +278,8 @@ func openbrowser(url string) {
 
 }
 
-func store() {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	bytes, err := json.MarshalIndent(days, "", "    ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	ioutil.WriteFile(filepath.Join(usr.HomeDir, ".days.json"), bytes, 0600)
-}
-
-func load() {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	bytes, err := ioutil.ReadFile(filepath.Join(usr.HomeDir, ".days.json"))
-	if err != nil {
-		bytes, err := json.MarshalIndent(days, "", "    ")
-		if err != nil {
-			log.Fatal(err)
-		}
-		ioutil.WriteFile(filepath.Join(usr.HomeDir, ".days.json"), bytes, 0600)
-	}
-
-	json.Unmarshal(bytes, &days)
-}
-
 func main() {
-	load()
+	tracking.load()
 	go tracker()
 	app := menuet.App()
 	app.Children = menuItems
