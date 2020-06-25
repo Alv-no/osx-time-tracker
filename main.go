@@ -96,7 +96,7 @@ func openAlvTime() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	openbrowser("https://alvtime-vue-pwa-prod.azurewebsites.net/")
+	openbrowser("https://alvtime.no/")
 }
 func openExperis() {
 	duration := tracking.hoursForToday()
@@ -108,7 +108,7 @@ func openExperis() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	openbrowser("https://mytime.experis.no//")
+	openbrowser("https://mytime.experis.no/")
 }
 func fmtDuration(dur time.Duration) string {
 	d := dur.Round(time.Minute)
@@ -284,7 +284,7 @@ func main() {
 	app := menuet.App()
 	app.Children = menuItems
 	app.Label = "AlvMenuTime"
-	app.AutoUpdate.Version = "v0.3"
+	app.AutoUpdate.Version = "v0.4"
 	app.AutoUpdate.Repo = "jantb/time"
 	app.RunApplication()
 }
