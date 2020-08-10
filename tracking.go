@@ -10,7 +10,9 @@ import (
 )
 
 type Tracking struct {
-	Days []Day
+	Days       []Day
+	TaskId     int
+	AlvTimeKey string
 }
 
 type Day struct {
@@ -86,6 +88,14 @@ func (tracking *Tracking) subAutoTresh(autoTimeTresh time.Duration) {
 		ClockIn:  time.Now(),
 		ClockOut: time.Now().Add(autoTimeTresh),
 	})
+}
+
+func (tracking *Tracking) setTaskId(taskId int) {
+	tracking.TaskId = taskId
+}
+
+func (tracking *Tracking) setAlvTimeKey(key string) {
+	tracking.AlvTimeKey = key
 }
 
 func (tracking Tracking) store() {

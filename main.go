@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	alvtimeClient "github.com/Alv-no/alvtime-go-client"
 	"github.com/caseymrm/menuet"
 	"github.com/jantb/robotgo"
 	"log"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -23,6 +25,21 @@ var subTimeTresh = true
 var endOfDayNotice = false
 
 func tracker() {
+	if tracking.AlvTimeKey == "" {
+		alert := menuet.App().Alert(menuet.Alert{
+			MessageText:     "Need accesskey to continue",
+			InformativeText: "Please enter it below",
+			Buttons:         []string{"Set"},
+			Inputs:          []string{"Access key"},
+		})
+		tracking.setAlvTimeKey(alert.Inputs[0])
+	}
+	c, err := alvtimeClient.New("https://alvtime-api-prod.azurewebsites.net", tracking.AlvTimeKey)
+	t, err := c.GetTasks()
+	if err != nil {
+		fmt.Println(err)
+	}
+	tasks = t
 	tracking.reset()
 	for {
 		hoursForToday := tracking.hoursForToday()
@@ -97,6 +114,30 @@ func openAlvTime() {
 		log.Fatal(err)
 	}
 	openbrowser("https://alvtime.no/")
+}
+
+func setAlvTime() {
+	value := getTodaysHoursRoundedTo15Minutes()
+
+	c, err := alvtimeClient.New("https://alvtime-api-prod.azurewebsites.net", tracking.AlvTimeKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = c.EditTimeEntries([]alvtimeClient.TimeEntrie{{Date: time.Now().Format("2006-01-02"), Value: float32(value), TaskID: tracking.TaskId}})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func getTodaysHoursRoundedTo15Minutes() float64 {
+	duration := tracking.hoursForToday()
+	d := duration.Round(15 * time.Minute)
+
+	value, err := strconv.ParseFloat(fmt.Sprintf("%.2f", d.Hours()), 32)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return value
 }
 func openExperis() {
 	duration := tracking.hoursForToday()
@@ -243,13 +284,38 @@ func menuItems() []menuet.MenuItem {
 					},
 				}
 			},
+		}, {
+			Text: "Set default task",
+			Children: func() []menuet.MenuItem {
+
+				var items []menuet.MenuItem
+				for i, task := range tasks {
+					if task.Favorite {
+						clickedTask := tasks[i]
+						items = append(items, menuet.MenuItem{
+							Text: fmt.Sprintf("%s %s %s %s", task.Name, task.Description, task.Project.Customer.Name, task.Project.Name),
+							Clicked: func() {
+								tracking.setTaskId(clickedTask.ID)
+							},
+							State: tracking.TaskId == tasks[i].ID,
+						})
+					}
+
+				}
+				return items
+			},
 		},
 		{
 			Type: menuet.Separator,
 		},
 		{
-			Text:    "AlvTime",
+			Text:    "AlvTime Website",
 			Clicked: openAlvTime,
+		},
+		{
+			Text: fmt.Sprintf("Set %.2f on %s %s %s %s in Alvtime",
+				getTodaysHoursRoundedTo15Minutes(), getDefaultTask().Name, getDefaultTask().Description, getDefaultTask().Project.Customer.Name, getDefaultTask().Project.Name),
+			Clicked: setAlvTime,
 		},
 		{
 			Text:    "Experis",
@@ -257,6 +323,15 @@ func menuItems() []menuet.MenuItem {
 		},
 	}
 	return items
+}
+
+func getDefaultTask() alvtimeClient.Task {
+	for _, task := range tasks {
+		if task.ID == tracking.TaskId {
+			return task
+		}
+	}
+	return alvtimeClient.Task{}
 }
 
 func openbrowser(url string) {
@@ -277,6 +352,8 @@ func openbrowser(url string) {
 	}
 
 }
+
+var tasks = []alvtimeClient.Task{}
 
 func main() {
 	tracking.load()
